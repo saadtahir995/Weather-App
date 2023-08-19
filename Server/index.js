@@ -5,7 +5,7 @@ import getTime from './API/gettime.js'
 import cors from 'cors'
 const app = express();
 app.use(cors({
-    origin: 'https://weather-app-eight-zeta-22.vercel.app/',
+    origin: 'https://weather-app-eight-zeta-22.vercel.app',
     methods: ['GET', 'POST'],
     credentials: true,
      optionsSuccessStatus:200 // To allow cookies, authorization headers, etc. (important for 'include')
