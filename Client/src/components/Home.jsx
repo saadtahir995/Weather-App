@@ -89,7 +89,7 @@ export default function Home() {
                 return
             }
             try {
-                const resp = await fetch(`http://192.168.43.52:9000/api/gettime/time`, {
+                const resp = await fetch(`https://weather-app-api-virid.vercel.app/api/gettime/time`, {
                     method: 'POST',
                     headers: {
                         'Content-type': 'application/json'
@@ -136,7 +136,7 @@ export default function Home() {
     const HandleGetLoc = async () => {
         try {
             dispatch({ type: 'FETCH_REQUEST' })
-            const response = await fetch("http://192.168.43.52:9000/api/getlocation", {
+            const response = await fetch("https://weather-app-api-virid.vercel.app/api/getlocation", {
                 method: 'POST',
                 headers: {
                     'Content-type': 'application/json'
