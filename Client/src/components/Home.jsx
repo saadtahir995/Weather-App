@@ -13,7 +13,7 @@ export default function Home() {
     minute: "",
   };
   const [Tmp, setTmp] = useState("");
-  const API_KEY = process.env.WEATHER_API;
+  const API_KEY = process.env.REACT_APP_WEATHER_API;
   const IP_API = "https://api.ipify.org?format=json";
   const fetchIP = async () => {
     try {
