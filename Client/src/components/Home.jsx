@@ -1,8 +1,16 @@
 import React, { useReducer, useEffect, useState } from "react";
 import { BsSearch } from "react-icons/bs";
+import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import '../stylesheets/Home.css'
 
 export default function Home() {
+  const [showPrivacyModal, setShowPrivacyModal] = useState(true);
+  const [userConsent, setUserConsent] = useState(false);
+
+  const handlePrivacyConsent = () => {
+    setUserConsent(true);
+  };
+  
   const initialState = {
     loading: false,
     error: "",
@@ -162,6 +170,9 @@ export default function Home() {
 
   
     <div className='container'>
+      {userConsent ? (<>
+        
+      
       <h1 className='app-title'>Weather App</h1>
       <div className='search-container'>
         <input
@@ -206,6 +217,12 @@ export default function Home() {
           <h3 className='error-message'>{state.error}</h3>
         )}
       </div>
+      </> ) : (
+        <PrivacyPolicyModal
+          onClose={() => setShowPrivacyModal(false)}
+          onConsent={handlePrivacyConsent}
+        />
+      )}
     </div>
     
     
