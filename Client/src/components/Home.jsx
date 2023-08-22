@@ -27,7 +27,6 @@ export default function Home() {
     try {
       const response = await fetch(IP_API);
       const data = await response.json();
-      console.log(data);
       dispatch({ type: "IP_CHANGE", payload: data.ip });
     } catch (error) {
       console.log(error);
@@ -89,7 +88,6 @@ export default function Home() {
         `https://api.openweathermap.org/data/2.5/weather?q=${state.City}&appid=${API_KEY}`
       );
       const data = await response.json();
-      console.log(data);
       if (data.cod === "404") {
         dispatch({ type: "FETCH_ERROR" });
         return;
