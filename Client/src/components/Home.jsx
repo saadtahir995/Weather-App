@@ -1,11 +1,38 @@
-import React, { useReducer, useEffect, useState } from "react";
-import { BsSearch } from "react-icons/bs";
+import React, { useReducer, useEffect, useState, useCallback } from "react";
+import { BsSearch, BsGeoAlt, BsThermometerHalf, BsWind, BsDroplet } from "react-icons/bs";
+import { WiDaySunny, WiNightClear, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog } from "react-icons/wi";
 import PrivacyPolicyModal from "./PrivacyPolicyModal";
+import SearchSuggestions from "./SearchSuggestions";
+import { preloadImages, getBackgroundForTime } from '../utils/backgroundManager';
 import '../stylesheets/Home.css'
+
+// Weather icon mapping
+const weatherIcons = {
+  '01d': WiDaySunny,
+  '01n': WiNightClear,
+  '02d': WiCloudy,
+  '02n': WiCloudy,
+  '03d': WiCloudy,
+  '03n': WiCloudy,
+  '04d': WiCloudy,
+  '04n': WiCloudy,
+  '09d': WiRain,
+  '09n': WiRain,
+  '10d': WiRain,
+  '10n': WiRain,
+  '11d': WiThunderstorm,
+  '11n': WiThunderstorm,
+  '13d': WiSnow,
+  '13n': WiSnow,
+  '50d': WiFog,
+  '50n': WiFog,
+};
 
 export default function Home() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(true);
   const [userConsent, setUserConsent] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const handlePrivacyConsent = () => {
     setUserConsent(true);
@@ -119,24 +146,17 @@ export default function Home() {
     }
   };
   useEffect(() => {
-    if (state.time) {
-      const noonHour = (5 + 19) / 2;
+    // Preload images when component mounts
+    preloadImages();
+  }, []);
 
-      if (state.time >= 6 && state.time < noonHour) {
-        document.body.style.color = "black";
-        document.body.style.backgroundImage =
-          "url('https://i0.wp.com/pixahive.com/wp-content/uploads/2021/01/Nature-view-in-morning-time-265756-pixahive.jpg?fit=2560%2C1920&ssl=1')";
-      } else if (state.time >= noonHour && state.time < 19) {
-        document.body.style.color = "black";
-        document.body.style.backgroundImage =
-          "url('https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/A_good_afternoon_%286933189752%29.jpg/1200px-A_good_afternoon_%286933189752%29.jpg')";
-      } else {
-        document.body.style.color = "white";
-        document.body.style.backgroundImage =
-          "url('https://images.unsplash.com/photo-1528818955841-a7f1425131b5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1332&q=80')";
-      }
+  useEffect(() => {
+    if (state.time) {
+      const { image, textColor } = getBackgroundForTime(state.time);
+      document.body.style.color = textColor;
+      document.body.style.backgroundImage = `url(${image})`;
     }
-  }, [state.sunrise, state.sunset, state.time]);
+  }, [state.time]);
 
   useEffect(() => {
     if (state.City) {
@@ -163,68 +183,176 @@ export default function Home() {
       console.log(error);
     }
   };
+
+  // Debounce function to limit API calls
+  const debounce = (func, wait) => {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  };
+
+  // Fetch city suggestions
+  const fetchCitySuggestions = async (query) => {
+    if (!query || query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_API}/api/cities/search?q=${encodeURIComponent(query)}`
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch suggestions');
+      }
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setSuggestions(data.slice(0, 5));
+      } else {
+        setSuggestions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
+    }
+  };
+
+  // Debounced version of fetchCitySuggestions
+  const debouncedFetchSuggestions = useCallback(
+    debounce(fetchCitySuggestions, 300),
+    []
+  );
+
+  // Handle input change
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setTmp(value);
+    setShowSuggestions(true);
+    debouncedFetchSuggestions(value);
+  };
+
+  // Handle suggestion selection
+  const handleSuggestionSelect = (cityName) => {
+    setTmp(cityName);
+    dispatch({ type: 'CITY_CHANGE', payload: cityName });
+    setShowSuggestions(false);
+    setSuggestions([]);
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.search-container')) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   return (
-    
-
-  
     <div className='container'>
-      {userConsent ? (<>
-        
-      
-      <h1 className='app-title'>Weather App</h1>
-      <div className='search-container'>
-        <input
-          type="text"
-          placeholder="Enter City"
-          className='search-input'
-          value={Tmp}
-          onChange={(e) => setTmp(e.target.value)}
-        />
-        <button className='search-button' onClick={() => dispatch({ type: 'CITY_CHANGE', payload: Tmp })}>
-          <BsSearch />
-        </button>
-      </div>
-      <button className='location-button' onClick={HandleGetLoc}>
-        Get Weather for Current Location
-      </button>
+      {userConsent ? (
+        <>
+          <h1 className='app-title'>Weather App</h1>
+          <div className='search-container glass-card'>
+            <div className='search-input-group'>
+              <input
+                type="text"
+                placeholder="Enter City"
+                className='search-input'
+                value={Tmp}
+                onChange={handleInputChange}
+                onFocus={() => setShowSuggestions(true)}
+              />
+              <button 
+                className='search-button' 
+                onClick={() => {
+                  dispatch({ type: 'CITY_CHANGE', payload: Tmp });
+                  setShowSuggestions(false);
+                }}
+              >
+                <BsSearch />
+              </button>
+            </div>
+            <SearchSuggestions
+              suggestions={suggestions}
+              onSelect={handleSuggestionSelect}
+              visible={showSuggestions}
+            />
+          </div>
+          <div className="search-actions">
+            <button className='location-button' onClick={HandleGetLoc}>
+              <BsGeoAlt /> Current Location
+            </button>
+          </div>
 
-      <div className='weather-details'>
-        {state.loading ? (
- <div className='spinner-container'>
- <div className='spinner-border text-primary' role='status'>
-   <span className='visually-hidden'>Loading...</span>
- </div>
-</div>) : state.weather?.main?.temp ? (
-          <>
-            <h2 className='temperature'>
-              {Math.floor(state.weather?.main?.temp - 273.15)}<sup>°C</sup>
-            </h2>
-            <h3 className='weather-description'>{state.weather.weather[0].description}</h3>
-            <p className='feels-like'>
-              Feels Like: {Math.floor(state.weather.main.feels_like - 273.15)}<sup>°C</sup>
-            </p>
-            <p className='location'>
-              {state.weather.name}, {state.weather.sys.country}
-            </p>
-            <p className='time'>
-              {state.time}:{state.minute < 10 ? <>0</> : null}
-              {state.minute}
-            </p>
-          </>
-        ) : (
-          <h3 className='error-message'>{state.error}</h3>
-        )}
-      </div>
-      </> ) : (
+          <div className='weather-details glass-card'>
+            {state.loading ? (
+              <div className='spinner-container'>
+                <div className='spinner-border text-primary' role='status'>
+                  <span className='visually-hidden'>Loading...</span>
+                </div>
+              </div>
+            ) : state.weather?.main?.temp ? (
+              <>
+                <div className="weather-icon">
+                  {React.createElement(
+                    weatherIcons[state.weather.weather[0].icon] || WiDaySunny,
+                    { size: 100 }
+                  )}
+                </div>
+                <h2 className='temperature'>
+                  {Math.floor(state.weather?.main?.temp - 273.15)}<sup>°C</sup>
+                </h2>
+                <h3 className='weather-description'>
+                  {state.weather.weather[0].description}
+                </h3>
+                
+                <div className="weather-info-grid">
+                  <div className="weather-info-item">
+                    <BsThermometerHalf />
+                    <p className='feels-like'>
+                      Feels Like: {Math.floor(state.weather.main.feels_like - 273.15)}°C
+                    </p>
+                  </div>
+                  
+                  <div className="weather-info-item">
+                    <BsDroplet />
+                    <p>Humidity: {state.weather.main.humidity}%</p>
+                  </div>
+                  
+                  <div className="weather-info-item">
+                    <BsWind />
+                    <p>Wind: {Math.round(state.weather.wind.speed * 3.6)} km/h</p>
+                  </div>
+                </div>
+
+                <div className="location-time-container">
+                  <p className='location'>
+                    <BsGeoAlt /> {state.weather.name}, {state.weather.sys.country}
+                  </p>
+                  <p className='time'>
+                    {state.time}:{state.minute < 10 ? '0' : ''}{state.minute}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <h3 className='error-message'>{state.error}</h3>
+            )}
+          </div>
+        </>
+      ) : (
         <PrivacyPolicyModal
           onClose={() => setShowPrivacyModal(false)}
           onConsent={handlePrivacyConsent}
         />
       )}
     </div>
-    
-    
-      
-
   );
 }
